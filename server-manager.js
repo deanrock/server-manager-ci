@@ -86,27 +86,34 @@ ServerManager.prototype.executeSSH = function(environment, command, callback) {
 
 	var re = new RegExp(end_delimiter,"g");
 	var msg = "";
+
+	function finish() {
+		console.log("===========");
+		if (!callback_called) {
+			console.log("===========");
+
+			that.log({
+				type: 'raw-shell',
+				message: msg,
+			});
+
+			callback_called = true;
+			callback();
+		}
+	}
+
 	ws.on('message', function(data, flags) {
-		that.log(data);
 		msg += data;
 
 		var count = (msg.match(re) || []).length;
 		if (count >= 2) {
 			ws.close(1000);
-			console.log("===========")
-			if (!callback_called) {
-				console.log("===========")
-				callback_called = true;
-				callback();
-			}
+			finish();
 		}
 	});
 
 	ws.on('close', function() {
-		if (!callback_called) {
-			callback_called = true;
-			callback();
-		}
+		finish();
 	});
 
 	/*this._getSSHPassword(function(password) {

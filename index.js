@@ -40,7 +40,16 @@ handler.on('error', function (err) {
 handler.on('push', function (event) {
     var messages = [];
     function log(m) {
-        messages.push(m);
+        if (typeof m === 'object' && m.type == 'raw-shell') {
+            messages.push(m);
+        }else{
+            m = {
+                type: 'text',
+                message: m,
+            };
+            
+            messages.push(m);
+        }
         console.log(m);
     }
 
