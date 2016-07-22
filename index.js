@@ -100,6 +100,7 @@ handler.on('push', function (event) {
                                                     json: {
                                                         text: 'Deployment by *' + event.payload.user_name + '* for job *' + job.fileName + '* for branch *' + job.gitlab.branch + '* finished. <' + config.myurl + 'logs?' + logName + '|view log>',
                                                         username: 'CI',
+                                                        channel: job.slack.channel,
                                                         icon_emoji: '',
                                                     }
                                                 });
