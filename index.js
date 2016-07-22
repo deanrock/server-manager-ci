@@ -6,7 +6,6 @@ var randomstring = require("randomstring");
 var url = require('url');
 var async = require('async');
 var createHandler = require('gitlab-webhook-handler');
-var RtmClient = require('@slack/client').RtmClient;
 var serverManager = require('./server-manager');
 var config = require('./config');
 var handler = createHandler({ path: '/webhook' });
