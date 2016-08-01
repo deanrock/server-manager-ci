@@ -1,0 +1,17 @@
+gitlab:
+  repo: gitlab-ci-test
+  branch: master
+  token: fh3g8934wh843989h89
+
+server_manager:
+  account: deantest
+
+slack:
+  channel: '#ci'
+
+steps:
+  - action: ssh
+    environment: python34
+    command: cd ~/domains/ && ls
+  - action: redeploy-app
+    name: php56d

@@ -41,6 +41,7 @@ handler.on('error', function (err) {
 handler.on('push', function (event) {
     var git_url = event.payload.project.git_ssh_url
     var git_name = event.payload.project.name
+    var unique_name = 'temp/' + git_name + '-' + yaml_token
     var yaml_token = event.token
     var messages = [];
     var file = '.gitlab-ci.yml'
@@ -63,14 +64,16 @@ handler.on('push', function (event) {
     event.payload.repository.name,
     event.payload.ref);
 
+    mkdirSync('./temp')
     var execSync = require('child_process').execSync;
-    var cmd = 'git archive --remote='+git_url+' HEAD .gitlab-ci.yml | tar -x';
+    var cmd = 'git archive --remote='+git_url+' HEAD .gitlab-ci.yml | tar -x >> ' + unique_name;
     execSync(cmd);
 
     try {
         var job = yaml.safeLoad(fs.readFileSync('./' + file, 'utf8'));
         console.log(job);
         console.log('loaded ' + file + ' job');
+        fs.unlinkSync(unique_name)
     } catch (e) {
         console.log('cannot load ' + file + 'job file' + e);
     }
@@ -121,7 +124,7 @@ handler.on('push', function (event) {
                                             request.post({
                                                 url: config.slack_webhook,
                                                 json: {
-                                                    text: 'Deployment by *' + event.payload.user_name + '* for job *' + job.fileName + '* for branch *' + job.gitlab.branch + '* finished. <' + config.myurl + 'logs?' + logName + '|view log>',
+                                                    text: 'Deployment by *' + event.payload.user_name + '* for job *' + git_name + '* for branch *' + job.gitlab.branch + '* finished. <' + config.myurl + 'logs?' + logName + '|view log>',
                                                     username: 'CI',
                                                     channel: job.slack.channel,
                                                     icon_emoji: '',
@@ -144,40 +147,10 @@ handler.on('push', function (event) {
 
 });
 
-
-var getFilesFromDirectory = function(path) {
-    var results = [];
-
-    fs.readdirSync(path).forEach(function(file) {
-        var stat = fs.statSync(path + '/' + file);
-
-        if (stat && !stat.isDirectory()) {
-            results.push(file);
-       }
-    });
-
-    return results;
-};
-
-var getJobs = function() {
-    var jobs = [];
-
-    var files = getFilesFromDirectory('./jobs');
-
-    files.forEach(function(file) {
-        try {
-            var doc = yaml.safeLoad(fs.readFileSync('./jobs/' + file, 'utf8'));
-            console.log('loaded ' + file + ' job');
-
-            doc.fileName = file;
-
-            jobs.push(doc);
-        } catch (e) {
-            console.log('cannot load ' + file + 'job file' + e);
-        }
-
-        console.log('---------------');
-    });
-
-    return jobs;
+var mkdirSync = function (path) {
+  try {
+    fs.mkdirSync(path);
+  } catch(e) {
+    if ( e.code != 'EEXIST' ) throw e;
+  }
 }
