@@ -44,7 +44,7 @@ handler.on('push', function (event) {
     var unique_name = 'temp/' + git_name + '-' + yaml_token
     var yaml_token = event.token
     var messages = [];
-    var file = '.gitlab-ci.yml'
+    var file = '.sm-ci.yml'
 
     function log(m) {
         if (typeof m === 'object' && m.type == 'raw-shell') {
