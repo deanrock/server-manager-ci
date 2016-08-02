@@ -39,7 +39,6 @@ handler.on('error', function (err) {
 })
 
 handler.on('push', function (event) {
-    console.log(event);
     var git_url = event.payload.project.git_ssh_url
     var git_name = event.payload.project.name
     var unique_name = 'temp/' + git_name + '-' + yaml_token
