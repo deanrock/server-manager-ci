@@ -39,6 +39,7 @@ handler.on('error', function (err) {
 })
 
 handler.on('push', function (event) {
+    console.log(event);
     var git_url = event.payload.project.git_ssh_url
     var git_name = event.payload.project.name
     var unique_name = 'temp/' + git_name + '-' + yaml_token
@@ -66,7 +67,7 @@ handler.on('push', function (event) {
 
     mkdirSync('./temp')
     var execSync = require('child_process').execSync;
-    var cmd = 'git archive --remote='+git_url+' HEAD ' + file + ' | tar -x >> ' + unique_name;
+    var cmd = 'git archive --remote='+git_url+' ' + event.payload.ref + ' ' + file + ' | tar -x >> ' + unique_name;
     execSync(cmd);
 
     try {
