@@ -10,6 +10,7 @@ var createHandler = require('./gitlab-webhook-handler');
 var serverManager = require('./server-manager');
 var config = require('./config');
 var handler = createHandler({ path: '/webhook' });
+var tmp = require('tmp');
 
 http.createServer(function (req, res) {
   handler(req, res, function (err) {
@@ -44,7 +45,7 @@ handler.on('push', function (event) {
     var unique_name = 'temp/' + git_name + '-' + yaml_token
     var yaml_token = event.token
     var messages = [];
-    var file = '.sm-ci.yml'
+    var file = '.sm-ci.yml';
 
     function log(m) {
         if (typeof m === 'object' && m.type == 'raw-shell') {
@@ -64,21 +65,26 @@ handler.on('push', function (event) {
     event.payload.repository.name,
     event.payload.ref);
 
-    mkdirSync('./temp')
-    var execSync = require('child_process').execSync;
-    var cmd = 'git archive --remote='+git_url+' ' + event.payload.ref + ' ' + file + ' | tar -x >> ' + unique_name;
-    execSync(cmd);
+    tmp.dir({ unsafeCleanup: true }, function _tempDirCreated(err, directory, cleanupCallback) {
+        if (err) throw err;
 
-    try {
-        var job = yaml.safeLoad(fs.readFileSync('./' + file, 'utf8'));
-        console.log(job);
-        console.log('loaded ' + file + ' job');
-        fs.unlinkSync(unique_name)
-    } catch (e) {
-        console.log('cannot load ' + file + 'job file' + e);
-    }
+        var filePath = path.join(directory, file);
+        var execSync = require('child_process').execSync;
+        var cmd = 'git archive --remote=' + git_url + ' ' + event.payload.ref + ' ' + file + ' | tar -x -C ' + directory;
+        execSync(cmd);
 
-    log('running job for ' + git_name);
+        try {
+            var job = yaml.safeLoad(fs.readFileSync(filePath, 'utf8'));
+            console.log(job);
+            console.log('loaded ' + file + ' job');
+        } catch (e) {
+            console.log('cannot load ' + file + 'job file' + e);
+        }
+
+        //cleanupCallback();
+
+
+        log('running job for ' + git_name);
 
         try {
 
@@ -86,65 +92,97 @@ handler.on('push', function (event) {
             if ('refs/heads/' + job.gitlab.branch == event.payload.ref) {
                 log('found matching branch ' + job.gitlab.branch);
 
-                    if (yaml_token == job.gitlab.token) {
-                        log('gitlab token matches');
+                if (yaml_token == job.gitlab.token) {
+                    log('gitlab token matches');
 
-                        var manager = new serverManager();
-                        manager.login(config.url, config.username, config.password, config.ssh_host, config.ssh_port, log, function() {
-                            manager.setAccount(job.server_manager.account, function() {
-                                async.eachSeries(job.steps, function(step, next) {
-                                    switch(step.action) {
-                                        case 'ssh':
-                                            log('SSHing to environment ' + step.environment + '...');
-                                            manager.executeSSH(step.environment, step.command, function() {
-                                                next();
-                                            });
-                                            break;
+                    var manager = new serverManager();
+                    manager.login(config, log, function () {
+                        manager.setAccount(job.server_manager.account, function () {
 
-                                        case 'redeploy-app':
-                                            log('redeploying app ' + step.name + '...');
-                                            manager.redeployApp(step.name, function() {
-                                                next();
-                                            });
-                                            break;
+                            var jobFailed = false;
 
-                                        default:
-                                            log('unknown action!!!');
+                            async.eachSeries(job.steps, function (step, next) {
+                                // skip steps if job has failed
+                                if (jobFailed) {
+                                    next();
+                                    return;
+                                }
+
+                                switch (step.action) {
+                                    case 'ssh':
+                                        log('SSHing to environment ' + step.environment + '...');
+                                        manager.executeSSH(step.environment, step.command, function (success) {
+                                            if (!success) {
+                                                jobFailed = true;
+                                            }
+
                                             next();
+                                        });
+                                        break;
+
+                                    case 'redeploy-app':
+                                        log('redeploying app ' + step.name + '...');
+                                        manager.redeployApp(step.name, function (success) {
+                                            if (!success) {
+                                                jobFailed = true;
+                                            }
+
+                                            next();
+                                        });
+                                        break;
+
+                                    default:
+                                        log('unknown action!!!');
+                                        jobFailed = true;
+
+                                        next();
+                                }
+                            }, function done() {
+                                log('finished!');
+
+                                log('failed? ' + jobFailed);
+
+                                var logName = randomstring.generate();
+
+                                fs.writeFile('./logs/' + logName + '.json', JSON.stringify(messages, null, 4), function (err) {
+                                    if (err) {
+                                        console.log(err);
+                                    } else {
+                                        var status = (jobFailed) ? 'FAILED' : 'succeeded';
+                                        var text = 'CI job by *' + event.payload.user_name + '* for repo *' + git_name + '* for branch *' + job.gitlab.branch + '* ' + status + '. <' + config.myurl + 'logs?' + logName + '|view log>';
+
+                                        request.post({
+                                            url: config.slack_webhook,
+                                            json: {
+                                                username: 'CI',
+                                                channel: job.slack.channel,
+                                                icon_emoji: '',
+                                                "attachments": [
+                                                    {
+                                                        mrkdwn_in: ["text"],
+                                                        "fallback": text,
+                                                        "color": jobFailed ? 'danger' : 'good',
+                                                        "text": text
+                                                    }
+                                                ]
+
+                                            }
+                                        });
                                     }
-                                }, function done() {
-                                    log('finished!');
-
-                                    var logName = randomstring.generate();
-
-                                    fs.writeFile('./logs/' + logName + '.json', JSON.stringify(messages, null, 4), function(err) {
-                                        if(err) {
-                                            console.log(err);
-                                        } else {
-                                            request.post({
-                                                url: config.slack_webhook,
-                                                json: {
-                                                    text: 'Deployment by *' + event.payload.user_name + '* for job *' + git_name + '* for branch *' + job.gitlab.branch + '* finished. <' + config.myurl + 'logs?' + logName + '|view log>',
-                                                    username: 'CI',
-                                                    channel: job.slack.channel,
-                                                    icon_emoji: '',
-                                                }
-                                            });
-                                        }
-                                    });
                                 });
                             });
                         });
-                    }
+                    });
+                }
 
             }
 
             log('---------------');
-        }catch(e) {
-            log('couldn\'t parse or execute job file ' + job.fileName + ':');
+        } catch (e) {
+            log('couldn\'t parse or execute job file');
             log(e);
         }
-
+    });
 });
 
 var mkdirSync = function (path) {
