@@ -50,7 +50,7 @@ ServerManager.prototype.executeSSH = function(environment, command, callback) {
 	var Client = require('ssh2').Client;
 	var conn = new Client();
 	conn.on('ready', function() {
-		conn.exec('ls', function(err, stream) {
+		conn.exec(command, function(err, stream) {
 			if (err) {
 				that.log('err: ' + err);
 				callback(false);
