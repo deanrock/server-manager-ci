@@ -11,6 +11,7 @@ var serverManager = require('./server-manager');
 var config = require('./config');
 var handler = createHandler({ path: '/webhook' });
 var tmp = require('tmp');
+var sshStep = require('./steps/ssh');
 
 http.createServer(function (req, res) {
   handler(req, res, function (err) {
@@ -95,84 +96,121 @@ handler.on('push', function (event) {
                 if (yaml_token == job.gitlab.token) {
                     log('gitlab token matches');
 
-                    var manager = new serverManager();
-                    manager.login(config, log, function () {
-                        manager.setAccount(job.server_manager.account, function () {
+                    var jobFailed = false;
 
-                            var jobFailed = false;
+                    function finish() {
+                        log('finished!');
 
-                            async.eachSeries(job.steps, function (step, next) {
-                                // skip steps if job has failed
-                                if (jobFailed) {
-                                    next();
-                                    return;
-                                }
+                        log('failed? ' + jobFailed);
 
-                                switch (step.action) {
-                                    case 'ssh':
-                                        log('SSHing to environment ' + step.environment + '...');
-                                        manager.executeSSH(step.environment, step.command, function (success) {
-                                            if (!success) {
-                                                jobFailed = true;
+                        var logName = randomstring.generate();
+
+                        fs.writeFile('./logs/' + logName + '.json', JSON.stringify(messages, null, 4), function (err) {
+                            if (err) {
+                                console.log(err);
+                            } else {
+                                var status = (jobFailed) ? 'FAILED' : 'succeeded';
+                                var text = 'CI job by *' + event.payload.user_name + '* for repo *' + git_name + '* for branch *' + job.gitlab.branch + '* ' + status + '. <' + config.myurl + 'logs?' + logName + '|view log>';
+
+                                request.post({
+                                    url: config.slack_webhook,
+                                    json: {
+                                        username: 'CI',
+                                        channel: job.slack.channel,
+                                        icon_emoji: '',
+                                        "attachments": [
+                                            {
+                                                mrkdwn_in: ["text"],
+                                                "fallback": text,
+                                                "color": jobFailed ? 'danger' : 'good',
+                                                "text": text
                                             }
+                                        ]
 
-                                            next();
-                                        });
-                                        break;
-
-                                    case 'redeploy-app':
-                                        log('redeploying app ' + step.name + '...');
-                                        manager.redeployApp(step.name, function (success) {
-                                            if (!success) {
-                                                jobFailed = true;
-                                            }
-
-                                            next();
-                                        });
-                                        break;
-
-                                    default:
-                                        log('unknown action!!!');
-                                        jobFailed = true;
-
-                                        next();
-                                }
-                            }, function done() {
-                                log('finished!');
-
-                                log('failed? ' + jobFailed);
-
-                                var logName = randomstring.generate();
-
-                                fs.writeFile('./logs/' + logName + '.json', JSON.stringify(messages, null, 4), function (err) {
-                                    if (err) {
-                                        console.log(err);
-                                    } else {
-                                        var status = (jobFailed) ? 'FAILED' : 'succeeded';
-                                        var text = 'CI job by *' + event.payload.user_name + '* for repo *' + git_name + '* for branch *' + job.gitlab.branch + '* ' + status + '. <' + config.myurl + 'logs?' + logName + '|view log>';
-
-                                        request.post({
-                                            url: config.slack_webhook,
-                                            json: {
-                                                username: 'CI',
-                                                channel: job.slack.channel,
-                                                icon_emoji: '',
-                                                "attachments": [
-                                                    {
-                                                        mrkdwn_in: ["text"],
-                                                        "fallback": text,
-                                                        "color": jobFailed ? 'danger' : 'good',
-                                                        "text": text
-                                                    }
-                                                ]
-
-                                            }
-                                        });
                                     }
+                                });
+                            }
+                        });
+                    }
+
+                    if (job.server_manager) {
+                        var manager = new serverManager();
+                        manager.login(config, log, function () {
+                            manager.setAccount(job.server_manager.account, function () {
+                                async.eachSeries(job.steps, function (step, next) {
+                                    // skip steps if job has failed
+                                    if (jobFailed) {
+                                        next();
+                                        return;
+                                    }
+
+                                    switch (step.action) {
+                                        case 'ssh':
+                                            log('SSHing to environment ' + step.environment + '...');
+                                            manager.executeSSH(step.environment, step.command, function (success) {
+                                                if (!success) {
+                                                    jobFailed = true;
+                                                }
+
+                                                next();
+                                            });
+                                            break;
+
+                                        case 'redeploy-app':
+                                            log('redeploying app ' + step.name + '...');
+                                            manager.redeployApp(step.name, function (success) {
+                                                if (!success) {
+                                                    jobFailed = true;
+                                                }
+
+                                                next();
+                                            });
+                                            break;
+
+                                        default:
+                                            log('unknown action!!!');
+                                            jobFailed = true;
+
+                                            next();
+                                    }
+                                }, function done() {
+                                    finish();
                                 });
                             });
                         });
-                    });
+                    }else{
+                        async.eachSeries(job.steps, function (step, next) {
+                            // skip steps if job has failed
+                            if (jobFailed) {
+                                next();
+                                return;
+                            }
+
+                            switch (step.action) {
+                                case 'ssh':
+                                    sshStep.execute({
+                                        step: step,
+                                        log: log,
+                                        config: config
+                                    }, function (success) {
+                                        if (!success) {
+                                            jobFailed = true;
+                                        }
+
+                                        next();
+                                    });
+                                    break;
+
+                                default:
+                                    log('unknown action!!!');
+                                    jobFailed = true;
+
+                                    next();
+                            }
+                        }, function done() {
+                            finish();
+                        });
+                    }
                 }
 
             }
