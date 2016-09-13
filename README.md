@@ -18,4 +18,8 @@ CI project for server manager (https://github.com/deanrock/server-manager)
     - private_key_passphrase: Passphrase to key
   - Run gitlab hook server with `node index`
 
-For local testing use: https://ngrok.com/
+## For developers
+
+  - Download https://ngrok.com/
+  - Run `ngrok http 3000`
+  - Copy the url found under 'Forwarding' section into `module.exports.myurl`
