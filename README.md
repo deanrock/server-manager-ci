@@ -1,6 +1,7 @@
 # server-manager-ci
 
-CI project for server manager (https://github.com/deanrock/server-manager)
+CI project for server manager (https://github.com/deanrock/server-manager).
+Uses Gitlab webhooks to execute commands inside docker containers on instances of server-manager/
 
 ## Setup
 
@@ -23,3 +24,5 @@ CI project for server manager (https://github.com/deanrock/server-manager)
   - Download https://ngrok.com/
   - Run `ngrok http 7777`
   - Copy the url found under 'Forwarding' section into `module.exports.myurl`
+  - Go to Gitlab under 'hooks' section and add `http://your-ngrok-url/webhook` as a webhook
+  - Click test and you should be seeing some output in your gitlab hook server running locally (A push event for branch master is sent)
