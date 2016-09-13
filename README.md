@@ -21,5 +21,5 @@ CI project for server manager (https://github.com/deanrock/server-manager)
 ## For developers
 
   - Download https://ngrok.com/
-  - Run `ngrok http 3000`
+  - Run `ngrok http 7777`
   - Copy the url found under 'Forwarding' section into `module.exports.myurl`
