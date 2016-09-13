@@ -26,3 +26,8 @@ Uses Gitlab webhooks to execute commands inside docker containers on instances o
   - Copy the url found under 'Forwarding' section into `module.exports.myurl`
   - Go to Gitlab under 'hooks' section and add `http://your-ngrok-url/webhook` as a webhook
   - Click test and you should be seeing some output in your gitlab hook server running locally (A push event for branch master is sent)
+  - NOTE: the token you set for your
+
+## Issues
+
+  - Config should have a list of allowed gitlab hosts (otherwise anyone could simulate a matching token with their own gitlab)
