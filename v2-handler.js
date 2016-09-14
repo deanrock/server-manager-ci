@@ -13,8 +13,14 @@ function handlev1 (event, job, messages) {
 	var branch = event.payload.ref.replace('refs/heads/', '')
 	var yaml_token = event.token
 	if (event.token != job.gitlab.token) {
+		log ('Token does not match. Exiting.', messages)
 		return
 	}
+
+	if ('refs/heads/' + job.gitlab.branch != event.payload.ref) {
+ 		log('Branch ' + job.gitlab.branch + ' not found.', messages);
+ 		return
+ 	}
 
 	execute(event, job, messages, branch)
 }
