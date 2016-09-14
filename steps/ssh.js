@@ -1,8 +1,8 @@
 var Client = require('ssh2').Client;
 var StringDecoder = require('string_decoder').StringDecoder;
 
-function execute({step, config, log}, callback) {
-    log('SSHing to server ' + step.server.host + ' as ' + step.server.username + '...');
+function execute({step, config, log, messages}, callback) {
+    log('SSHing to server ' + step.server.host + ' as ' + step.server.username + '...', messages);
 
     var conn = new Client();
     conn.on('ready', function () {

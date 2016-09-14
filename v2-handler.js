@@ -109,7 +109,8 @@ function execute(event, job, messages, branch) {
                     sshStep.execute({
                         step: step,
                         log: log,
-                        config: config
+                        config: config,
+                        messages: messages,
                     }, function (success) {
                         if (!success) {
                             jobFailed = true;
