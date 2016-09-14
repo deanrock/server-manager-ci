@@ -14,6 +14,7 @@ var tmp = require('tmp');
 var sshStep = require('./steps/ssh');
 var handlev2 = require('./v2-handler').handlev2;
 var handlev1 = require('./v2-handler').handlev1;
+var log = require('./v2-handler').log;
 
 http.createServer(function (req, res) {
   handler(req, res, function (err) {
@@ -50,23 +51,9 @@ handler.on('push', function (event) {
     var messages = [];
     var file = '.sm-ci.yml';
 
-    function log(m) {
-        if (typeof m === 'object' && m.type == 'raw-shell') {
-            messages.push(m);
-        }else{
-            m = {
-                type: 'text',
-                message: m,
-            };
-
-            messages.push(m);
-        }
-        console.log(m);
-    }
-
-    log('Received a push event for %s to %s',
+    /*log('Received a push event for %s to %s' %
     event.payload.repository.name,
-    event.payload.ref);
+    event.payload.ref, messages);*/
 
     tmp.dir({ unsafeCleanup: true }, function _tempDirCreated(err, directory, cleanupCallback) {
         if (err) throw err;
@@ -78,23 +65,20 @@ handler.on('push', function (event) {
 
         try {
             var job = yaml.safeLoad(fs.readFileSync(filePath, 'utf8'));
-            console.log(job);
-            console.log('loaded ' + file + ' job');
+            log(job, messages);
+            log('loaded ' + file + ' job', messages);
         } catch (e) {
-            console.log('cannot load ' + file + 'job file' + e);
+            log('cannot load ' + file + 'job file' + e, messages);
         }
 
-        //cleanupCallback();
-
-
-        log('running job for ' + git_name);
+        log('running job for ' + git_name, messages);
 
         if (job.version == '2') {
-            log ('Found YAML version 2')
+            log ('Found YAML version 2', messages)
             handlev2(event, job, messages);
             return
         } else {
-            log ('Found YAML version 1')
+            log ('Found YAML version 1', messages)
             handlev1(event, job, messages);
             return
         }

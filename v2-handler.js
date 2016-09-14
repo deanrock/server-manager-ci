@@ -41,13 +41,13 @@ function handlev2 (event, job, messages) {
 }
 
 function execute(event, job, messages, branch) {
-	console.log("executing job")
+	log("executing job", messages)
 
 	var jobFailed = false;
 
     if (job.server_manager) {
         var manager = new serverManager();
-        manager.login(config, console.log, function () {
+        manager.login(config, log, messages, function () {
             manager.setAccount(job.server_manager.account, function () {
                 async.eachSeries(job.steps, function (step, next) {
                     // skip steps if job has failed
@@ -58,7 +58,7 @@ function execute(event, job, messages, branch) {
 
                     switch (step.action) {
                         case 'ssh':
-                            console.log('SSHing to environment ' + step.environment + '...');
+                            log('SSHing to environment ' + step.environment + '...', messages);
                             manager.executeSSH(step.environment, step.command, function (success) {
                                 if (!success) {
                                     jobFailed = true;
@@ -69,7 +69,7 @@ function execute(event, job, messages, branch) {
                             break;
 
                         case 'redeploy-app':
-                            console.log('redeploying app ' + step.name + '...');
+                            log('redeploying app ' + step.name + '...', messages);
                             manager.redeployApp(step.name, function (success) {
                                 if (!success) {
                                     jobFailed = true;
@@ -80,7 +80,7 @@ function execute(event, job, messages, branch) {
                             break;
 
                         default:
-                            console.log('unknown action!!!');
+                            log('unknown action!!!', messages);
                             jobFailed = true;
 
                             next();
@@ -114,7 +114,7 @@ function execute(event, job, messages, branch) {
                     break;
 
                 default:
-                    console.log('unknown action!!!');
+                    console.log('unknown action!!!', messages);
                     jobFailed = true;
 
                     next();
@@ -126,14 +126,14 @@ function execute(event, job, messages, branch) {
 }
 
 function finish(jobFailed, event, job, messages, branch) {
-    console.log('finished!');
-    console.log('failed? ' + jobFailed);
-    console.log(job)
+    log('finished!', messages);
+    log('failed? ' + jobFailed, messages);
+
     var logName = randomstring.generate();
 
     fs.writeFile('./logs/' + logName + '.json', JSON.stringify(messages, null, 4), function (err) {
         if (err) {
-            console.log(err);
+            log(err, messages);
         } else {
             var status = (jobFailed) ? 'FAILED' : 'succeeded';
             var text = 'CI job by *' + event.payload.user_name + '* for repo *' + event.payload.project.name + '* for branch *' + branch + '* ' + status + '. <' + config.myurl + 'logs?' + logName + '|view log>';
@@ -159,7 +159,24 @@ function finish(jobFailed, event, job, messages, branch) {
     });
 }
 
+function log(m, messages) {
+	console.log(messages)
+
+    if (typeof m === 'object' && m.type == 'raw-shell') {
+        messages.push(m);
+    }else{
+        m = {
+            type: 'text',
+            message: m,
+        };
+
+        messages.push(m);
+    }
+    console.log(m);
+}
+
 module.exports = {
     handlev2: handlev2,
-    handlev1: handlev1
+    handlev1: handlev1,
+    log: log
 }

@@ -5,13 +5,14 @@ var StringDecoder = require('string_decoder').StringDecoder;
 function ServerManager() { }
 ServerManager.prototype.host = null;
 ServerManager.prototype._sshPassword = null;
-ServerManager.prototype.login = function(config, log, callback) {
+ServerManager.prototype.login = function(config, log, messages, callback) {
 	this.host = config.url;
 	this.ssh_host = config.ssh_host;
 	this.ssh_port = config.ssh_port;
 	this.private_key_path = config.private_key_path;
 	this.private_key_passphrase = config.private_key_passphrase;
 	this.log = log;
+	this.messages = messages;
 	this.jar = request.jar();
 	var that = this;
 
@@ -31,7 +32,7 @@ ServerManager.prototype.login = function(config, log, callback) {
 				url: that.host + 'api/v1/profile',
 				jar: that.jar,
 			}, function(err, response, body) {
-				that.log('login data: ' + body);
+				that.log('login data: ' + body, that.messages);
 				callback();
 			})
 		});
@@ -52,13 +53,13 @@ ServerManager.prototype.executeSSH = function(environment, command, callback) {
 	conn.on('ready', function() {
 		conn.exec(command, function(err, stream) {
 			if (err) {
-				that.log('err: ' + err);
+				that.log('err: ' + err, that.messages);
 				callback(false);
 			}else{
 				var decoder = new StringDecoder('utf8');
 
 				stream.on('close', function(code, signal) {
-					that.log('Stream :: close :: code: ' + code + ', signal: ' + signal);
+					that.log('Stream :: close :: code: ' + code + ', signal: ' + signal, that.messages);
 					conn.end();
 
 					callback(code == 0);
@@ -69,7 +70,7 @@ ServerManager.prototype.executeSSH = function(environment, command, callback) {
 						type: 'raw-shell',
 						message: textChunk,
 						stream: 'stdout'
-					});
+					}, that.messages);
 				}).stderr.on('data', function(data) {
 						var textChunk = decoder.write(data);
 
@@ -77,7 +78,7 @@ ServerManager.prototype.executeSSH = function(environment, command, callback) {
 							type: 'raw-shell',
 							message: textChunk,
 							stream: 'stderr'
-						});
+						}, that.messages);
 				});
 			}
 		});
