@@ -8,13 +8,13 @@ function execute({step, config, log, messages}, callback) {
     conn.on('ready', function () {
         conn.exec(step.command, function (err, stream) {
             if (err) {
-                log('err: ' + err);
+                log('err: ' + err, messages);
                 callback(false);
             } else {
                 var decoder = new StringDecoder('utf8');
 
                 stream.on('close', function (code, signal) {
-                    log('Stream :: close :: code: ' + code + ', signal: ' + signal);
+                    log('Stream :: close :: code: ' + code + ', signal: ' + signal, messages);
                     conn.end();
 
                     callback(code == 0);
@@ -25,7 +25,7 @@ function execute({step, config, log, messages}, callback) {
                         type: 'raw-shell',
                         message: textChunk,
                         stream: 'stdout'
-                    });
+                    }, messages);
                 }).stderr.on('data', function (data) {
                         var textChunk = decoder.write(data);
 
@@ -33,7 +33,7 @@ function execute({step, config, log, messages}, callback) {
                             type: 'raw-shell',
                             message: textChunk,
                             stream: 'stderr'
-                        });
+                        }, messages);
                     });
             }
         });
