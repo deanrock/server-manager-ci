@@ -34,7 +34,7 @@ function handlev2 (event, job, messages) {
 	var branch = event.payload.ref.replace('refs/heads/', '')
 	var yaml_token = event.token
 
-	if (typeof(job[branch]) == undefined) {
+	if (typeof(job[branch]) == 'undefined') {
 		return
 	}
 
