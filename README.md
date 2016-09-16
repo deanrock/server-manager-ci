@@ -1,7 +1,15 @@
 # server-manager-ci
 
-CI project for server manager (https://github.com/deanrock/server-manager).
-Uses Gitlab webhooks to execute commands inside docker containers on instances of server-manager/
+Continuous deployment project for server manager (https://github.com/deanrock/server-manager).
+Uses Gitlab webhooks to execute commands inside docker containers on instances of server-manager. It can also be used to deploy to other SSH servers.
+
+## Features
+
+* execute SSH commands on server-manager accounts
+* redeploy apps on server-manager accounts
+* execute SSH commands on other SSH servers
+* supports different steps to perform for different branches
+* post deployment status to Slack with the link to report
 
 ## Setup
 
@@ -27,6 +35,11 @@ Uses Gitlab webhooks to execute commands inside docker containers on instances o
   - Go to Gitlab under 'hooks' section and add `http://your-ngrok-url/webhook` as a webhook
   - Click test and you should be seeing some output in your gitlab hook server running locally (A push event for branch master is sent)
   - NOTE: the token you set for your
+
+## TODO
+
+- [ ] Support different versions of Ansible
+
 
 ## Issues
 
