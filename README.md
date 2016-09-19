@@ -24,7 +24,7 @@ Uses Gitlab webhooks to execute commands inside docker containers on instances o
     - slack_webhook: Slack webhook URL
     - myurl: Domain name where server-manager-ci is running
     - private_key_path: Path to private key inside server-manager-ci container
-    - private_key_passphrase: Passphrase to key
+    - private_key_passphrase: Passphrase to key (or `null` if the key isn't encrypted)
   - Run gitlab hook server with `node index`
 
 ## For developers

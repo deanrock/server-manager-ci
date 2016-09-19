@@ -5,3 +5,5 @@ module.exports.ssh_host = "";
 module.exports.ssh_port = 22;
 module.exports.slack_webhook = "";
 module.exports.myurl = "";
+module.exports.private_key_path = "";
+module.exports.private_key_passphrase = null;
