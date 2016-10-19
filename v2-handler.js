@@ -52,7 +52,14 @@ function execute(event, job, messages, branch) {
 	var jobFailed = false;
 
     if (job.server_manager) {
-        var manager = new serverManager();
+        name = job.server_manager.name
+
+        // handle old versions that supported one manager only
+        if (typeof(name) == 'undefined') {
+            name = config.v2_single_manager_name
+        }
+
+        var manager = new serverManager(name, config);
         manager.login(config, log, messages, function () {
             manager.setAccount(job.server_manager.account, function () {
                 async.eachSeries(job.steps, function (step, next) {

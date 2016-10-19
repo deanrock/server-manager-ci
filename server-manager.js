@@ -1,14 +1,18 @@
 var request = require('request');
 var cookie = require('cookie');
 var StringDecoder = require('string_decoder').StringDecoder;
+var manager_data = {}
 
-function ServerManager() { }
+function ServerManager(name, config) { 
+	manager_data = config.server_managers[name]
+	console.log(manager_data)
+}
 ServerManager.prototype.host = null;
 ServerManager.prototype._sshPassword = null;
 ServerManager.prototype.login = function(config, log, messages, callback) {
-	this.host = config.url;
-	this.ssh_host = config.ssh_host;
-	this.ssh_port = config.ssh_port;
+	this.host = manager_data.url;
+	this.ssh_host = manager_data.ssh_host;
+	this.ssh_port = manager_data.ssh_port;
 	this.private_key_path = config.private_key_path;
 	this.private_key_passphrase = config.private_key_passphrase;
 	this.log = log;
@@ -22,8 +26,8 @@ ServerManager.prototype.login = function(config, log, messages, callback) {
 		request.post({
 			url: that.host + 'accounts/login/?next=/',
 			form: {
-				username: config.username,
-				password: config.password,
+				username: manager_data.username,
+				password: manager_data.password,
 				csrfmiddlewaretoken: csrf_token,
 			},
 			jar: that.jar,

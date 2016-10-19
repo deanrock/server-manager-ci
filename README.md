@@ -16,15 +16,17 @@ Uses Gitlab webhooks to execute commands inside docker containers on instances o
   - Clone the project
   - Run `npm install`
   - Run `cp example-config.js config.js` and fill out the blanks
-    - url: Full web URL to your server-manager (where the apps you would like to restart/manage live)
-    - username: Username on your server-manager
-    - password: Password for user
-    - ssh_host: Hostname used for SSH'ing to your server-manager
-    - ssh_port: Port used for SSH'ing to your server-manager
+    - server_managers:
+      - url: Full web URL to your server-manager (where the apps you would like to restart/manage live)
+      - username: Username on your server-manager
+      - password: Password for user
+      - ssh_host: Hostname used for SSH'ing to your server-manager
+      - ssh_port: Port used for SSH'ing to your server-manager
     - slack_webhook: Slack webhook URL
     - myurl: Domain name where server-manager-ci is running
     - private_key_path: Path to private key inside server-manager-ci container
     - private_key_passphrase: Passphrase to key (or `null` if the key isn't encrypted)
+    - v2_single_manager_name: Server-manager dictionary key for defaulting previous versions of sm-ci
   - Run gitlab hook server with `node index`
 
 ## For developers
