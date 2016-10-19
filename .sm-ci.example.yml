@@ -1,0 +1,41 @@
+--- 
+production: 
+  domain: http://test-production.com
+  gitlab: 
+    branch: production
+    repo: gitlab-ci-test
+    token: test
+  server_manager: 
+    account: testAccount
+    name: name1
+  slack: 
+    channel: "#ci"
+  steps: 
+    - 
+      action: ssh
+      command: "sleep 1s"
+      environment: python34
+    - 
+      action: redeploy-app
+      name: php56
+master: 
+  domain: http://test-development.com
+  gitlab: 
+    branch: master
+    repo: gitlab-ci-test
+    token: test
+  server_manager: 
+    name: name1
+    account: testAccount
+  slack: 
+    channel: "#ci"
+  steps: 
+    - 
+      action: ssh
+      command: "sleep 1s"
+      environment: python34
+    - 
+      action: redeploy-app
+      name: php56
+      
+version: "2"

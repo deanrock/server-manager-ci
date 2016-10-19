@@ -29,6 +29,11 @@ Uses Gitlab webhooks to execute commands inside docker containers on instances o
     - v2_single_manager_name: Server-manager dictionary key for defaulting previous versions of sm-ci
   - Run gitlab hook server with `node index`
 
+## Gitlab setup
+
+  - Gitlab should have a defined webhook with the URL pointing to running instance of this repo
+  - Repo should contain a .sm-ci.yml file, see example
+
 ## For developers
 
   - Download https://ngrok.com/
@@ -36,7 +41,7 @@ Uses Gitlab webhooks to execute commands inside docker containers on instances o
   - Copy the url found under 'Forwarding' section into `module.exports.myurl`
   - Go to Gitlab under 'hooks' section and add `http://your-ngrok-url/webhook` as a webhook
   - Click test and you should be seeing some output in your gitlab hook server running locally (A push event for branch master is sent)
-  - NOTE: the token you set for your
+  - NOTE: the token you set for your webhook, should also be in .sm-ci.yml
 
 ## TODO
 

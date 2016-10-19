@@ -52,7 +52,7 @@ function execute(event, job, messages, branch) {
 	var jobFailed = false;
 
     if (job.server_manager) {
-        name = job.server_manager.name
+        var name = job.server_manager.name
 
         // handle old versions that supported one manager only
         if (typeof(name) == 'undefined') {
@@ -151,6 +151,9 @@ function finish(jobFailed, event, job, messages, branch) {
         } else {
             var status = (jobFailed) ? 'FAILED' : 'succeeded';
             var text = 'CI job by *' + event.payload.user_name + '* for repo *' + event.payload.project.name + '* for branch *' + branch + '* ' + status + '. <' + config.myurl + 'logs?' + logName + '|view log>';
+            if (typeof(job.domain) != 'undefined') {
+                text = text + " (URL: "+ job.domain +")"
+            }
 
             request.post({
                 url: config.slack_webhook,
