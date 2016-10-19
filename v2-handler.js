@@ -48,7 +48,6 @@ function handlev2 (event, job, messages) {
 
 function execute(event, job, messages, branch) {
 	log("executing job", messages)
-
 	var jobFailed = false;
 
     if (job.server_manager) {
@@ -150,10 +149,18 @@ function finish(jobFailed, event, job, messages, branch) {
             log(err, messages);
         } else {
             var status = (jobFailed) ? 'FAILED' : 'succeeded';
-            var text = 'CI job by *' + event.payload.user_name + '* for repo *' + event.payload.project.name + '* for branch *' + branch + '* ' + status + '. <' + config.myurl + 'logs?' + logName + '|view log>';
+            var text = 'CI job by *' + event.payload.user_name + '* for repo *' + event.payload.project.name + '* for branch *' + branch + '* ' + status + '. <' + config.myurl + 'logs?' + logName + '|view log>'
+
+            if (event.payload.commits.length > 0) {
+                if (typeof(event.payload.commits[0].message) != 'undefined') {
+                    text = text + "\nCommit message: "+ event.payload.commits[0].message
+                }
+            }  
+
             if (typeof(job.domain) != 'undefined') {
-                text = text + " (URL: "+ job.domain +")"
+                text = text + "\nURL: "+ job.domain +""
             }
+
 
             request.post({
                 url: config.slack_webhook,
