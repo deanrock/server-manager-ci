@@ -20,26 +20,22 @@ ServerManager.prototype.login = function(config, log, messages, callback) {
 	this.jar = request.jar();
 	var that = this;
 
-	request.get({url: this.host + 'accounts/login/?next=/', jar: this.jar}, function optionalCallback(err, httpResponse, body) {
-		var csrf_token = cookie.parse(httpResponse.headers['set-cookie'][0])['csrftoken'];
-
-		request.post({
-			url: that.host + 'accounts/login/?next=/',
-			form: {
-				username: manager_data.username,
-				password: manager_data.password,
-				csrfmiddlewaretoken: csrf_token,
-			},
+	request.post({
+		url: that.host + 'api/v1/auth/login',
+		body: {
+			username: manager_data.username,
+			password: manager_data.password,
+		},
+		json: true,
+		jar: that.jar,
+	}, function(err, response, body) {
+		request.get({
+			url: that.host + 'api/v1/profile',
 			jar: that.jar,
 		}, function(err, response, body) {
-			request.get({
-				url: that.host + 'api/v1/profile',
-				jar: that.jar,
-			}, function(err, response, body) {
-				that.log('login data: ' + body, that.messages);
-				callback();
-			})
-		});
+			that.log('login data: ' + body, that.messages);
+			callback();
+		})
 	});
 };
 
